@@ -3,18 +3,43 @@
 # Add steps that build, run tests, deploy, and more:
 # https://aka.ms/yaml
 
-trigger:
-- main
+schedules:
+- cron: '0 0 * * *'
+  displayName: 'Daily WS1 Intelligence Report'
+  branches:
+    include:
+    - np
+  always: true
+
+variables:
+  resourceGroupName: 'az-np-westus2-usr-624-Client_HW_Int-netstructures'
+  storageAccountName: 'awnpstorageacct'
+  containerName: 'intelstoragecontainer'
+  macosapps_id: 'acafaef3-8af6-405c-bc91-84c59d2a69d5'
+  macosapps_filePath: '/home/vsts/work/_temp/macapps_report.csv'
 
 pool:
   vmImage: ubuntu-latest
 
 steps:
 - task: PowerShell@2
-  displayName: 'Generate report from Workspace One Intelligence.'
+  displayName: 'Generate report for MacOS apps.'
   inputs:
-    filePath: 'pbi2adls.ps1'
+    arguments: > #
+      -report $(macosapps_id)
+      -filePath $(macosapps_filePath)
+    filePath: 'generate_report.ps1'
 
+# WORKAROUND
+#- task: AzurePowerShell@5
+#  displayName: 'Upload MacOS apps report to Azure Blob Storage.'
+#  inputs:
+#    azureSubscription: 'az-np-usr-624-client_hw_int-arm-service-endpoint'
+#    ScriptType: 'FilePath'
+#    ScriptPath: 'upload.ps1'
+#    ScriptArguments: '-resourceGroupName $(resourceGroupName) -storageAccountName $(storageAccountName) -containerName $(containerName) -filePath $(macosapps_filePath)'
+#    azurePowerShellVersion: 'LatestVersion'
+    
 - script: |
     terraform --version
     terraform init -input=false
