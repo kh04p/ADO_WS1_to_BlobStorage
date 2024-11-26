@@ -1,10 +1,14 @@
 resource "azurerm_resource_group" "rg" {
-    name = "PBI2ADLS"
+    name = var.azure_resource_group
     location = "westus"
+
+    lifecycle {
+        prevent_destroy = true
+    }
 }
 
-resource "azurerm_storage_account" "storageacc" {
-    name = "pbi2adlsstorage"
+resource "azurerm_storage_account" "storageaccount" {
+    name = var.azure_storage_account
     resource_group_name = azurerm_resource_group.rg.name
     location = azurerm_resource_group.rg.location
     account_kind = "StorageV2"
@@ -17,8 +21,8 @@ resource "azurerm_storage_account" "storageacc" {
 }
 
 resource "azurerm_storage_container" "storagecontainer" {
-    name = "ws1intel"
-    storage_account_name = azurerm_storage_account.storageacc.name
+    name = var.azure_storage_container
+    storage_account_name = azurerm_storage_account.storageaccount.name
     container_access_type = "private"
 
     lifecycle {
@@ -27,9 +31,9 @@ resource "azurerm_storage_container" "storagecontainer" {
 }
 
 resource "azurerm_storage_blob" "storagefile" {
-    name = "ws1intelreport.csv"
-    storage_account_name = azurerm_storage_account.storageacc.name
+    name = var.azure_storage_blob
+    storage_account_name = azurerm_storage_account.storageaccount.name
     storage_container_name = azurerm_storage_container.storagecontainer.name
     type = "Block"
-    source = "ws1intelreport.csv"
+    source = var.azure_storage_blob
 }
