@@ -1,0 +1,47 @@
+# Starter pipeline
+# Start with a minimal pipeline that you can customize to build and deploy your code.
+# Add steps that build, run tests, deploy, and more:
+# https://aka.ms/yaml
+
+trigger:
+- main
+
+pool:
+  vmImage: ubuntu-latest
+
+steps:
+- task: PowerShell@2
+  displayName: 'Generate report from Workspace One Intelligence.'
+  inputs:
+    filePath: 'pbi2adls.ps1'
+
+- script: |
+    terraform --version
+    terraform init -input=false
+  displayName: 'Initialize Terraform configs.'
+
+- script: terraform import azurerm_resource_group.rg "/subscriptions/eed2b1dd-900b-446f-9150-007ffb679353/resourceGroups/PBI2ADLS"
+  timeoutInMinutes: 1
+  displayName: 'Import AZ resource group.'
+
+- script: terraform import azurerm_storage_account.storageacc "/subscriptions/eed2b1dd-900b-446f-9150-007ffb679353/resourceGroups/PBI2ADLS/providers/Microsoft.Storage/storageAccounts/pbi2adlsstorage"
+  timeoutInMinutes: 1
+  displayName: 'Import AZ storage account.'
+
+- script: terraform import azurerm_storage_container.storagecontainer "https://pbi2adlsstorage.blob.core.windows.net/ws1intel"
+  timeoutInMinutes: 1
+  displayName: 'Import AZ storage container.'
+
+- script: terraform import azurerm_storage_blob.storagefile "https://pbi2adlsstorage.blob.core.windows.net/ws1intel/ws1intelreport.csv"
+  timeoutInMinutes: 1
+  displayName: 'Import AZ storage blob.'
+
+- script: terraform plan -out=tfplan -input=false
+  displayName: 'Create Terraform plan and save to tfplan.'
+
+- script: terraform apply -refresh-only -input=false tfplan
+  displayName: 'Apply Terraform configs.'
+  condition: succeeded()
+
+- script: terraform state list
+  displayName: 'Show Terraform state.'
